@@ -9,7 +9,8 @@ export default defineConfig({
   define: { __LAB_VERSION__: JSON.stringify(`v${version}`) },
   test: {
     environment: "jsdom",
-    include: ["test/*.test.jsx", "web/src/gateway-trace/*.test.jsx", "web/src/floating-dialog/*.test.jsx"],
+    include: ["test/*.test.jsx", "web/src/gateway-trace/*.test.jsx", "web/src/floating-dialog/*.test.jsx", "web/src/diagram-kit/*.test.jsx", "web/src/diagram-kit.pin.test.js"],
+    esbuild: { jsx: "automatic" },
     setupFiles: ["./test/setup-jest-dom.js"]
   }
 });

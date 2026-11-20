@@ -4,3 +4,14 @@ import { afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";
 
 afterEach(() => cleanup());
+
+// React Flow measures the DOM; jsdom has no layout, so give it the few browser APIs it reads (the diagram kit needs them).
+class RO { observe() {} unobserve() {} disconnect() {} }
+globalThis.ResizeObserver ??= RO;
+globalThis.DOMMatrixReadOnly ??= class { constructor() { this.m22 = 1; } };
+if (typeof HTMLElement !== "undefined") {
+  Object.defineProperties(HTMLElement.prototype, {
+    offsetWidth: { configurable: true, get() { return 200; } },
+    offsetHeight: { configurable: true, get() { return 80; } },
+  });
+}

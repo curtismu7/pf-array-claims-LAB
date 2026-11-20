@@ -8,17 +8,27 @@ import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
+// The boxes the kit's EdgeLabels reads from React Flow's store, in jsdom where nothing is measured.
+const STORE_BOXES = new Map(
+  [["user", { x: 0, y: 0 }], ["pf", { x: 300, y: 0 }], ["door", { x: 600, y: 60 }], ["tool", { x: 900, y: 0 }], ["refused", { x: 900, y: 160 }]].map(([id, position]) => [
+    id,
+    { id, internals: { positionAbsolute: position }, measured: { width: 220, height: 80 } }
+  ])
+);
+
 const rf = vi.hoisted(() => ({ props: null, fitView: 0 }));
-vi.mock("reactflow", async (orig) => {
+vi.mock("@xyflow/react", async (orig) => {
   const actual = await orig();
   const R = await import("react");
   return {
     ...actual,
     default: (props) => { rf.props = props; return R.createElement("div", { "data-testid": "rf-mock" }); },
-    useReactFlow: () => ({ fitView: () => { rf.fitView += 1; } })
+    ReactFlow: (props) => { rf.props = props; return R.createElement("div", { "data-testid": "rf-mock" }); },
+    useReactFlow: () => ({ fitView: () => { rf.fitView += 1; } }),
+    useStore: (sel) => sel({ nodeLookup: STORE_BOXES }),
+    useNodesState: actual.useNodesState
   };
 });
-
 import FlowSim from "../web/src/FlowSim.jsx";
 import { getDiagram, edgeIndex } from "../web/src/diagram-data.js";
 import { SCENARIOS } from "../server/src/scenarios.js";
@@ -76,10 +86,22 @@ describe("diagram loaded by name (R17)", () => {
     for (const s of d.steps) for (const i of s.edges) expect(Number.isInteger(i) && i >= 0 && i < d.edges.length).toBe(true);
   });
 
+  it("every arrow gets a kit label item with facing-side handles, and the walked arrow is the active one", async () => {
+    const { toLabelItems } = await import("../web/src/FlowSim.jsx");
+    const d = getDiagram("pf-array-claims-flow");
+    const items = toLabelItems(d, null);
+    expect(items.map((it) => it.text)).toEqual(d.edges.map((e) => e.label));
+    expect(items.every((it) => it.sourceHandle && it.targetHandle)).toBe(true);
+    const walked = toLabelItems(d, 2);
+    expect(walked[2].active).toBe(true);
+    expect(walked.filter((it) => it.dim).length).toBe(d.edges.length - 1);
+  });
+
   it("the page builds its boxes and arrows from that data, one box per node, one arrow per edge", () => {
     fetchOk();
     render(<FlowSim activeScenario={null} speed={1000} resetKey={0} />);
     const d = getDiagram("pf-array-claims-flow");
+    expect({ keys: rf.props ? Object.keys(rf.props) : null, nodesType: typeof rf.props?.nodes, renders: (window.__rfRenders||[]).length }).toBeTruthy();
     expect(rf.props.nodes.map((n) => n.id)).toEqual(d.nodes.map((n) => n.id));
     expect(rf.props.edges.map((e) => `${e.source}>${e.target}`)).toEqual(d.edges.map((e) => `${e.source}>${e.target}`));
   });
