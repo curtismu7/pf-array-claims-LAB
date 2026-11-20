@@ -49,10 +49,11 @@ function walk(dir, out = []) {
 // keep its sha pinned against drift (the vendored-sha check below).
 // The vendored conformance gate and the family attribution checker quote the
 // patterns they enforce (org names, attribution lines); skip them the same way.
-const VENDORED_ALLOWED = new Set(["standalone-ui.css", "demo-kit-conformance.mjs", "check-no-ai-attribution.sh", "check-ui-standard.sh"]);
+const VENDORED_ALLOWED = new Set(["standalone-ui.css", "demo-kit-conformance.mjs", "check-no-ai-attribution.sh", "check-ui-standard.sh", "diagram-kit.pin.test.js"]);
 // The vendored floating-dialog files name the project they were ported from in their comments. They are byte-pinned (checked below), so they are
 // skipped here the same way.
-const VENDORED_DIRS = ["/web/src/floating-dialog/"];
+// The vendored diagram kit names the shared repo in its pin comment (and its tests use example URLs). Byte-pinned, so skipped here the same way.
+const VENDORED_DIRS = ["/web/src/floating-dialog/", "/web/src/diagram-kit/"];
 
 let files = 0;
 for (const file of walk(root)) {
