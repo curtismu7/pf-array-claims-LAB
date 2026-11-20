@@ -1,0 +1,114 @@
+{
+ "schema": "demo-content-pack/1",
+ "id": "pf-array-claims-lab",
+ "title": "PF Array Claims",
+ "version": "1.0.0",
+ "demo": {
+  "id": "pf-array-claims-lab",
+  "name": "PF Array Claims",
+  "catalog": "D140 provisional",
+  "baseUrl": "http://127.0.0.1:7828",
+  "doctor": "/api/health",
+  "tags": [
+   "pingfederate",
+   "oauth-tokens",
+   "authorization-policy",
+   "agent-identity",
+   "simulated"
+  ]
+ },
+ "glossary": [
+  {
+   "id": "ismemberof",
+   "term": "isMemberOf",
+   "definition": "The claim an access token carries for group entitlements. Its shape decides what a policy can do: a delimited string (\"[A, B]\") forces text search; a JSON array ([\"A\", \"B\"]) allows exact membership. The shape is decided at the token mapping, before any policy runs.",
+   "aliases": [
+    "group claim",
+    "groups"
+   ]
+  },
+  {
+   "id": "substring-matching",
+   "term": "Substring matching",
+   "definition": "Searching for a group name inside a delimited-string claim. It is always inexact: MCPAccess-Atlan-Read-Extra matches a policy asking for MCPAccess-Atlan-Read, so a token can be granted a group it never held (the over-grant, reproduced in this lab).",
+   "aliases": [
+    "text search",
+    "contains"
+   ]
+  },
+  {
+   "id": "exact-membership",
+   "term": "Exact membership",
+   "definition": "Asking whether a JSON-array claim holds a value exactly. A decoy name never matches. This is what the token should enable, by carrying isMemberOf as a real array.",
+   "aliases": [
+    "array membership"
+   ]
+  },
+  {
+   "id": "decoy-group",
+   "term": "Decoy group",
+   "definition": "A group name that contains the policy's group as a substring but was never granted, such as MCPAccess-Atlan-Read-Extra. Give a test user the decoy only: the substring policy grants, the array policy refuses. The decoy pair is the proof that matching is exact.",
+   "aliases": [
+    "negative test"
+   ]
+  },
+  {
+   "id": "mock-door",
+   "term": "Mock policy door",
+   "definition": "This lab's in-process stand-in for the group-entitlement policy on an MCP gateway. It evaluates two claim-reading modes (exact array membership, substring search) over example group names, each compared exactly. It is not a policy engine and it decides nothing real.",
+   "aliases": [
+    "simulated gateway"
+   ]
+  }
+ ],
+ "sources": [
+  {
+   "id": "rfc7519",
+   "title": "RFC 7519: JSON Web Token (JWT)",
+   "url": "https://www.rfc-editor.org/rfc/rfc7519",
+   "kind": "standard",
+   "use": "A JWT claim value can be any JSON value, including an array; the string-vs-array question is about which one the token mapping emits.",
+   "status": "not-read",
+   "checked": "2026-11-20"
+  }
+ ],
+ "cards": [
+  {
+   "id": "try-mint",
+   "label": "Mint both shapes",
+   "description": "Pick the shape and the groups, mint, and read the decoded claims: one token's isMemberOf is a delimited string, the other's a JSON array. Mock tokens, labelled.",
+   "group": "try-it",
+   "action": {
+    "type": "route",
+    "href": "/#mint"
+   },
+   "terms": [
+    "ismemberof"
+   ],
+   "story": "S01"
+  },
+  {
+   "id": "try-overgrant",
+   "label": "Case 2: the decoy over-grant",
+   "description": "A token that never held MCPAccess-Atlan-Read is granted it anyway when the policy searches text; the array policy refuses the same token. Simulated, reproducible.",
+   "group": "try-it",
+   "action": {
+    "type": "route",
+    "href": "/#flow"
+   },
+   "terms": [
+    "substring-matching",
+    "decoy-group"
+   ],
+   "story": "S01"
+  }
+ ],
+ "stories": [
+  {
+   "id": "S01",
+   "title": "Two shapes, two answers",
+   "text": "A group-entitlement policy asks one question: does this token carry MCPAccess-Atlan-Read? When the token's isMemberOf is a delimited string the policy can only search text, and MCPAccess-Atlan-Read-Extra matches just as well. When it is a JSON array, membership is exact and the decoy is refused. The fix is a token-mapping change, and the decoy pair is the proof.",
+   "verticals": ["default"]
+  }
+ ]
+}

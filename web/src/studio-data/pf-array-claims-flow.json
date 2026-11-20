@@ -1,0 +1,124 @@
+{
+  "schema": "diagram-studio/1",
+  "id": "pf-array-claims-flow",
+  "title": "One claim, two shapes, two different answers",
+  "lede": "Simulated: the mock PingFederate mints the access token with isMemberOf shaped by the scenario. The mock policy door reads the claim the way the policy says (array membership or substring) and allows or refuses the MCP tool call.",
+  "groups": {
+    "user": {
+      "label": "User + groups",
+      "color": "amber"
+    },
+    "idp": {
+      "label": "PingFederate (mock)",
+      "color": "blue"
+    },
+    "gw": {
+      "label": "Policy door (mock)",
+      "color": "dark"
+    },
+    "tool": {
+      "label": "MCP tool",
+      "color": "green"
+    },
+    "refusal": {
+      "label": "Refusal",
+      "color": "red"
+    }
+  },
+  "nodes": [
+    {
+      "id": "user",
+      "group": "user",
+      "label": "User jdoe",
+      "sub": [
+        "groups: MCPAccess-*"
+      ],
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "pf",
+      "group": "idp",
+      "label": "PingFederate token mint",
+      "sub": [
+        "shape: string [A, B] or array [\"A\", \"B\"]"
+      ],
+      "x": 300,
+      "y": 0
+    },
+    {
+      "id": "door",
+      "group": "gw",
+      "label": "Policy door",
+      "sub": [
+        "policy: isMemberOf contains MCPAccess-Atlan-Read",
+        "match: exact membership or substring"
+      ],
+      "x": 600,
+      "y": 0
+    },
+    {
+      "id": "tool",
+      "group": "tool",
+      "label": "Atlan MCP tools",
+      "sub": [
+        "allowed: the group matched exactly"
+      ],
+      "x": 450,
+      "y": 170
+    },
+    {
+      "id": "refused",
+      "group": "refusal",
+      "label": "Call refused",
+      "sub": [
+        "HTTP 403, JSON-RPC -32600",
+        "the reason names the shape mismatch"
+      ],
+      "x": 750,
+      "y": 170
+    }
+  ],
+  "edges": [
+    {
+      "source": "user",
+      "target": "pf",
+      "label": "sign-in, groups to map"
+    },
+    {
+      "source": "pf",
+      "target": "door",
+      "label": "Bearer token: isMemberOf"
+    },
+    {
+      "source": "door",
+      "target": "tool",
+      "label": "matched → allowed"
+    },
+    {
+      "source": "door",
+      "target": "refused",
+      "label": "no exact match → refused"
+    }
+  ],
+  "steps": [
+    {
+      "title": "The token mint shapes the claim",
+      "what": "The mock PingFederate puts the user's MCPAccess groups into isMemberOf, shaped by the scenario: a delimited string, or a real JSON array.",
+      "why": "The shape is decided at the token mapping, before any policy runs. It is the one knob this whole use case turns.",
+      "edges": [
+        0,
+        1
+      ]
+    },
+    {
+      "title": "The policy reads the claim",
+      "what": "The door evaluates the policy (contains MCPAccess-Atlan-Read) against the claim: exact membership when it says array, a text search when it says substring.",
+      "why": "A policy written for an array can never match a string claim, and a policy that searches text matches decoy names too.",
+      "edges": [
+        2,
+        3
+      ]
+    }
+  ]
+}

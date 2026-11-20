@@ -1,0 +1,68 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      # The vendored shared stylesheet must match the hash pinned when it was last re-vendored.
+      - run: bash scripts/check-ui-standard.sh
+      - run: node scripts/doctor.mjs
+
+  # The real gate: a FAIL exits non-zero and fails the job (new app, Demo tier).
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+      - name: Run conformance gate (vendored copy, new app)
+        run: node test/kit/demo-kit-conformance.mjs . --new --tier=Tester
+
+  forbidden-strings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Scan history and tree (counts only, the list is never printed)
+        env:
+          FORBIDDEN_STRINGS: ${{ secrets.FORBIDDEN_STRINGS }}
+        run: |
+          list="$RUNNER_TEMP/forbidden.txt"
+          printf '%s\n' "$FORBIDDEN_STRINGS" | grep -v '^$' > "$list" || true
+          test -s "$list" || { echo "::error::FORBIDDEN_STRINGS secret is not set"; exit 1; }
+          hist=$(git log -p --all | grep -cF -f "$list" || true)
+          tree=$(git grep -l -F -f "$list" -- . || true)
+          tree_count=$(printf '%s' "$tree" | grep -c . || true)
+          echo "history hits: $hist"
+          echo "tree files with hits: $tree_count"
+          test "$hist" = "0" && test "$tree_count" = "0"
+      - name: No AI attribution in the tree or any commit (owner rule 2026-11-07)
+        run: bash scripts/check-no-ai-attribution.sh
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

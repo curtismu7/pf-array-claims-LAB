@@ -1,0 +1,21 @@
+name: pf-array-claims-lab
+
+services:
+  pf-array-claims-lab:
+    build: .
+    image: pf-array-claims-lab:latest
+    container_name: pf-array-claims-lab
+    ports:
+      - "127.0.0.1:${HOST_PORT:-7828}:7828"
+    environment:
+      - PORT=7828
+      - BIND_ALL=1
+      - LAB_ALLOWED_HOSTS=localhost:${HOST_PORT:-7828},127.0.0.1:${HOST_PORT:-7828},pf-array-claims-lab.local.ping-devops.com:7828,pf-array-claims-lab:7828,pf-array-claims-lab.local.ping-devops.com:8443,local.ping-devops.com:8443
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped

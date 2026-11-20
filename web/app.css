@@ -1,0 +1,391 @@
+/* App-specific styles on top of the vendored family stylesheet. Theme tokens only (no literal colours), so light and dark both work. */
+
+.shell-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: var(--box-dark);
+  color: var(--on-box);
+}
+
+.shell-brand {
+  font-weight: 700;
+}
+
+.accent-rule {
+  height: 3px;
+  background: var(--accent-gradient);
+}
+
+.shell-nav a {
+  color: inherit;
+  text-decoration: none;
+  padding: 4px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.shell-nav a[aria-current="page"] {
+  background: var(--accent-gradient);
+  color: var(--on-accent);
+}
+
+.shell-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+main {
+  padding: 0 0 32px;
+  max-width: 2200px;
+  margin: 0 auto;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 16px 0;
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+
+.card.evidence {
+  border-top-color: var(--status-info);
+}
+
+.intro h1 {
+  margin: 0 0 8px;
+  font-size: 1.35rem;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.flow-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.flow-canvas {
+  height: 420px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.run-status {
+  min-height: 1.2em;
+  margin: 0 0 8px;
+}
+
+/* The family trace panel's fixed lead sentence names "the Privilege gateway"; over a mock that is wrong, and the panel is byte-pinned,
+   so it is hidden here and the basis note (LabTrace) says what the panel shows. */
+.lab-trace .gw-lead {
+  display: none;
+}
+
+.error-pane {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--accent);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  color: var(--danger-text);
+}
+
+.real-reason {
+  font-size: 0.8125rem;
+  max-width: 24rem;
+  color: inherit;
+}
+
+.real-reason code {
+  font-family: var(--font-mono);
+}
+
+.scenario-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.scenario-about p {
+  margin: 6px 0;
+}
+
+.chip {
+  display: inline-block;
+  font-size: 0.72rem;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--surface);
+  vertical-align: middle;
+}
+
+.basis-measured {
+  border-color: var(--status-info);
+  color: var(--status-info);
+}
+
+.basis-unmeasured {
+  border-color: var(--status-warn);
+  color: var(--status-warn);
+}
+
+/* Partial basis: some legs simulated, some measured (the step-up case). Info border like the measured chip, honest label. */
+.basis-partial {
+  border-color: var(--status-info);
+  color: var(--status-info);
+}
+
+.state-active {
+  border-color: var(--status-ok);
+  color: var(--status-ok);
+}
+
+.state-candidate {
+  border-color: var(--status-warn);
+  color: var(--status-warn);
+}
+
+.verdict-allowed {
+  border-color: var(--status-ok);
+  color: var(--status-ok);
+}
+
+.verdict-held {
+  border-color: var(--status-warn);
+  color: var(--status-warn);
+}
+
+.label-measured {
+  border-color: var(--status-ok);
+  color: var(--status-ok);
+}
+
+.label-console {
+  border-color: var(--status-info);
+  color: var(--status-info);
+}
+
+.label-unverified {
+  border-color: var(--status-warn);
+  color: var(--status-warn);
+}
+
+.verdict-refused {
+  border-color: var(--accent);
+  color: var(--danger-text);
+}
+
+.run-result {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.policy {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 8px 0;
+}
+
+.policy header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+pre.cedar {
+  font-size: 0.8125rem;
+  background: var(--surface-2, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 8px 0;
+}
+
+.call {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--status-ok);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 8px 0;
+}
+
+.call.refused {
+  border-left-color: var(--accent);
+}
+
+.call.held {
+  border-left-color: var(--status-warn);
+}
+
+.call.approved {
+  border-left-color: var(--status-info);
+}
+
+.case {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 12px;
+}
+
+.case h3 {
+  margin: 6px 0;
+}
+
+.guide-steps,
+.is-list {
+  padding-left: 1.2rem;
+}
+
+.guide-steps li,
+.is-list li {
+  margin: 10px 0;
+}
+
+.note-line {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin: 4px 0;
+  font-size: 0.875rem;
+}
+
+.note-line .chip {
+  flex: none;
+  white-space: nowrap;
+}
+
+.is-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 760px) {
+  .is-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+.run-reason {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  margin: 6px 0 0;
+}
+
+.copy-btn {
+  min-height: 32px;
+  padding: 2px 10px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th {
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+th,
+td {
+  min-width: 6.5rem;
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.real-cmd code {
+  background: var(--surface-2, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
+.speed-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+}
+
+.app-footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 16px;
+}
+
+.presenter-say {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 12px 0;
+  font-size: 1.05rem;
+  background: var(--surface);
+}
+
+@media (max-width: 480px) {
+  th,
+  td {
+    min-width: 4.5rem;
+    padding: 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  .shell-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .shell-right {
+    margin-left: 0;
+  }
+}
+
+.pack-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 4px 0 8px;
+}
+
+.story {
+  border-left: 3px solid var(--border);
+  padding-left: 10px;
+}
