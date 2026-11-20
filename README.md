@@ -20,7 +20,7 @@ Below the tour:
 
 The diagram (ReactFlow, movable boxes, Simulate, Reset, speed control) is loaded from the diagram-studio/1 data vendored under `web/src/studio-data`, never hand-built.
 
-Every run shows **What the mock policy door did (simulated)** (the family's shared trace panel, relabelled for this lab through its title and basis-note props): the request, the reply, and the decisions in between (token verified, claim shape, policy ask), each marked `checked` because this lab's mock door computed it. It is not Privilege and not a Cedar engine.
+Every run shows **What the policy door did** (the family's shared trace panel, relabelled per mode through its title and basis-note props): the request, the reply, and the decisions in between (token verified, claim shape, policy ask). A mock run marks every decision `checked` because the mock door computed it; a Real run titles the panel **What the real gateway did (live call)** and marks its decisions inferred/observed, because the gateway reports no per-check detail. The door is not Privilege and not a Cedar engine; a Real run's claim verdict stays this lab's own computation.
 
 ## Workspace and configuration
 

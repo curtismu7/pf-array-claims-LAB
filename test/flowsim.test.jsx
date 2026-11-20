@@ -171,6 +171,6 @@ describe("the edges show what the mock door decided", () => {
     await play("multi-all-groups");
     expect(screen.getByTestId("gateway-trace").textContent).toMatch(/tools\/list/);
     expect(screen.getByTestId("gateway-trace").textContent).toMatch(/Atlan MCP tools/);
-    expect(screen.getByTestId("gateway-trace").textContent).toMatch(/What the mock policy door did/i);
+    expect(screen.getByTestId("gateway-trace").textContent).toMatch(/What the policy door did/i);
   });
 });

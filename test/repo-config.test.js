@@ -163,8 +163,8 @@ test("README and CLAUDE.md say how the workspace id works, where the diagram com
     assert.doesNotMatch(doc, /partly met|lab-local `diagram-studio\/1`/);
   }
   assert.match(claude, /bad_workspace/);
-  assert.match(readme, /mock policy door/i);
+  assert.match(readme, /policy door did/i);
   assert.match(readme, /Docker image does not contain it/);
-  assert.match(readme, /What the mock policy door did/i);
+  assert.match(readme, /What the (mock )?policy door did/i);
   assert.match(readme, /relabelled/i);
 });
