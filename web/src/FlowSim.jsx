@@ -38,10 +38,11 @@ function BoxNode({ data }) {
   const [targetPosition, sourcePosition] = SIDES[data.id] || [Position.Top, Position.Bottom];
   return (
     <div className={`dg-node ${GROUP_CLASS[data.group] || "dg-grey"}`} style={{ width: 220 }}>
-      <Handle type="target" position={targetPosition} isConnectable={false} />
+      {/* ids "t"/"s" are what the studio edges' targetHandle/sourceHandle resolve against; without them React Flow drops every edge */}
+      <Handle id="t" type="target" position={targetPosition} isConnectable={false} />
       <strong>{data.label}</strong>
       {(data.sub || []).map((t) => <span key={t}>{t}</span>)}
-      <Handle type="source" position={sourcePosition} isConnectable={false} />
+      <Handle id="s" type="source" position={sourcePosition} isConnectable={false} />
       {data.passport && <Passport p={data.passport} />}
     </div>
   );
@@ -202,8 +203,9 @@ export default function FlowSim({ activeScenario, speed, resetKey }) {
       <h2>{studio.title}</h2>
       <p className="hint">{studio.lede}</p>
       <div className="flow-controls">
-        <button type="button" className="primary" disabled={running || !activeScenario} onClick={() => activeScenario && run(activeScenario)}>
-          Simulate
+        {/* With no scenario picked, Simulate runs the first one: the button must never be a dead end. */}
+        <button type="button" className="primary" disabled={running} onClick={() => run(activeScenario || { id: "string-contains-hit" })}>
+          {activeScenario ? "Simulate" : "Simulate (first scenario)"}
         </button>
         <button type="button" onClick={reset}>
           Reset diagram
