@@ -10,6 +10,11 @@ services:
       - PORT=7828
       - BIND_ALL=1
       - LAB_ALLOWED_HOSTS=localhost:${HOST_PORT:-7828},127.0.0.1:${HOST_PORT:-7828},pf-array-claims-lab.local.ping-devops.com:7828,pf-array-claims-lab:7828,pf-array-claims-lab.local.ping-devops.com:8443,local.ping-devops.com:8443
+      - STANDALONE_ENV=${STANDALONE_ENV:-}
+      - PAC_GW_URL=${PAC_GW_URL:-}
+      - PAC_GW_APPS=${PAC_GW_APPS:-}
+      - PAC_GW_VERSION=${PAC_GW_VERSION:-}
+      - PAC_GW_KEY_LAB_AGENT=${PAC_GW_KEY_LAB_AGENT:-}
     read_only: true
     tmpfs:
       - /tmp
