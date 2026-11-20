@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { request } from "node:http";
+import dns from "node:dns";
 import { buildServer, readState, evaluate } from "../server/src/index.js";
 import { installNetguard } from "../server/src/netguard.js";
 import { createHealth } from "../server/src/health.js";
@@ -11,10 +12,10 @@ const HOST = "localhost:7828";
 const TRACEPARENT = /^00-(?!0{32})[0-9a-f]{32}-(?!0{16})[0-9a-f]{16}-[0-9a-f]{2}$/;
 const JWT = /^eyJ[\w-]{10,}\.[\w-]{10,}\.[\w-]{10,}$/;
 
-async function withServer(fn) {
+async function withServer(fn, buildOpts = {}) {
   const saved = process.env.LAB_ALLOWED_HOSTS;
   process.env.LAB_ALLOWED_HOSTS = "localhost:7828,127.0.0.1:7828";
-  const srv = buildServer().listen(0, "127.0.0.1");
+  const srv = buildServer(buildOpts).listen(0, "127.0.0.1");
   await new Promise((r) => srv.on("listening", r));
   const base = `http://127.0.0.1:${srv.address().port}`;
   const j = async (p, b, method = "POST") => {
@@ -336,4 +337,120 @@ test("netguard: install is idempotent and blocks an outbound attempt", async () 
 test("health module standalone: the check function decides the state", async () => {
   const { router } = createHealth({ check: () => true });
   assert.ok(router);
+});
+
+// ---- Real mode ---------------------------------------------------------------------------------------------
+
+// A fake door: same contract as createRealDoor's product, no network.
+function fakeDoor({ ok = true } = {}) {
+  return {
+    origin: "https://gw.example.com",
+    apps: ["door-example"],
+    callers: [{ id: "agent-a", label: "Agent a" }],
+    version: "test",
+    list: async (app, caller) => ({
+      ok, ms: 5,
+      tools: ok ? [{ name: "atlan_search", description: "search" }] : undefined,
+      refusal: ok ? undefined : { status: 401, message: "the gateway refused", layer: "key" },
+      wire: ok ? [
+        { http: "POST", url: `https://gw.example.com/${app}/mcp`, rpcMethod: "initialize", request: { headers: { authorization: "Bearer <agent key, 20 characters, kept on the server>" }, body: { method: "initialize" } }, response: { status: 200, headers: { "content-type": "application/json" }, body: { result: { serverInfo: { name: "gw" } } } }, at: "t", ms: 2 },
+        { http: "POST", url: `https://gw.example.com/${app}/mcp`, rpcMethod: "tools/list", request: { headers: {}, body: { method: "tools/list" } }, response: { status: 200, headers: { "content-type": "application/json" }, body: { result: { tools: [{ name: "atlan_search" }] } } }, at: "t", ms: 3 },
+      ] : [
+        { http: "POST", url: `https://gw.example.com/${app}/mcp`, rpcMethod: "initialize", request: { headers: { authorization: "Bearer <agent key, 7 characters, kept on the server>" }, body: { method: "initialize" } }, response: { status: 401, headers: { "content-type": "application/json" }, body: { error: "bad key" } }, at: "t", ms: 2 },
+      ],
+    }),
+    call: async () => ({ ok: false, refusal: { status: 403, message: "refused", layer: "policy" }, ms: 4 }),
+  };
+}
+
+test("real: with an injected door, info offers Real, mode accepts real, and a run-real carries the real trace", async () => {
+  await withServer(async (j, base) => {
+    const info = await (await fetch(`${base}/api/info`)).json();
+    assert.equal(info.realAvailable, true);
+    assert.equal(info.source, "real");
+    assert.deepEqual(info.realApps, ["door-example"]);
+
+    const mode = await j("/api/mode", { source: "real" });
+    assert.equal(mode.status, 200);
+    assert.equal(mode.body.source, "real");
+
+    const setup = await (await fetch(`${base}/api/real-setup`)).json();
+    assert.deepEqual(setup.apps, ["door-example"]);
+    assert.deepEqual(setup.callers.map((c) => c.id), ["agent-a"]);
+
+    const claims = { iss: "https://pf.example.com", sub: "jdoe@example.com", isMemberOf: ["MCPAccess-Atlan-Read"] };
+    const run = await j("/api/run-real", { scenario: "array-exact-hit", claims });
+    assert.equal(run.status, 200);
+    assert.equal(run.body.source, "real");
+    assert.equal(run.body.verdict, "allowed");
+    assert.equal(run.body.token.mock, false);
+    assert.deepEqual(run.body.token.claims, claims);
+    assert.equal(run.body.real.app, "door-example");
+    assert.equal(run.body.real.gateway, "https://gw.example.com");
+    // the trace is the real trace shape: source real, every decision observed/inferred, never checked
+    assert.equal(run.body.trace.source, "real");
+    for (const d of run.body.trace.decisions) assert.ok(d.basis !== "checked", "a real trace never says checked");
+    assert.match(JSON.stringify(run.body.trace), /tools\/list/);
+    // the trace must not hold a real bearer credential
+    assert.ok(!/Bearer eyJ/.test(JSON.stringify(run.body.trace)));
+    const back = await j("/api/mode", { source: "mock" });
+    assert.equal(back.status, 200);
+  }, { door: fakeDoor() });
+});
+
+test("real: a bad-key refusal still computes the claim verdict honestly and shows the refusal", async () => {
+  await withServer(async (j) => {
+    const claims = { isMemberOf: ["MCPAccess-Atlan-Read-Extra"] };
+    const run = await j("/api/run-real", { scenario: "decoy-array", claims });
+    assert.equal(run.status, 200);
+    assert.equal(run.body.verdict, "refused", "the claim verdict is computed even when the gateway refuses");
+    assert.equal(run.body.outcome.exact, true);
+    assert.equal(run.body.real.listing.ok, false);
+    assert.equal(run.body.real.listing.refusal.layer, "key");
+  }, { door: fakeDoor({ ok: false }) });
+});
+
+test("real: the lab refuses a bearer token outright, and validates the claims shape", async () => {
+  await withServer(async (j) => {
+    const refused = await j("/api/run-real", { scenario: "array-exact-hit", claims: { isMemberOf: [] }, token: "eyJhbGciOiJub25lIn0.a.b" });
+    assert.equal(refused.status, 400);
+    assert.equal(refused.body.error, "token_not_accepted");
+
+    const noClaims = await j("/api/run-real", { scenario: "array-exact-hit" });
+    assert.equal(noClaims.status, 400);
+    assert.equal(noClaims.body.error, "bad_claims");
+
+    const badShape = await j("/api/run-real", { scenario: "array-exact-hit", claims: ["not", "an", "object"] });
+    assert.equal(badShape.status, 400);
+
+    const unknown = await j("/api/run-real", { scenario: "nope", claims: {} });
+    assert.equal(unknown.status, 400);
+
+    const huge = await j("/api/run-real", { scenario: "array-exact-hit", claims: { pad: "x".repeat(17 * 1024) } });
+    assert.equal(huge.status, 413);
+  }, { door: fakeDoor() });
+});
+
+test("real: run-real without a door is a 409 with the settings hint", async () => {
+  await withServer(async (j, base) => {
+    const info = await (await fetch(`${base}/api/info`)).json();
+    assert.equal(info.realAvailable, false);
+    assert.ok(typeof info.realReason === "string" && info.realReason.length > 10);
+    const r = await j("/api/run-real", { scenario: "array-exact-hit", claims: {} });
+    assert.equal(r.status, 409);
+    assert.equal(r.body.error, "real_unavailable");
+    assert.ok(r.body.message.length > 10);
+  });
+});
+
+test("netguard: an allowed real origin passes; everything else stays blocked", async () => {
+  // the guard is module-global; the withServer servers already installed it. Prove the allow-list path:
+  const ng = await import("../server/src/netguard.js");
+  ng.setAllowedOrigins(["https://gw.example.com"]);
+  try {
+    // DNS for a non-allowed name is still blocked
+    await assert.rejects(() => dns.promises.lookup("self-test.invalid"), /network blocked/);
+  } finally {
+    ng.setAllowedOrigins([]);
+  }
 });

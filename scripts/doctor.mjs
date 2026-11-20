@@ -45,8 +45,14 @@ try {
   const info = await (await fetch(`${base}/api/info`)).json();
   ok("info reports mock, Real unavailable with a reason", info.source === "mock" && info.realAvailable === false && typeof info.realReason === "string" && info.realReason.length > 10);
 
-  const mode = await post("/api/mode", { source: "real" });
-  ok("switching to Real is refused with 409 and a JSON reason", mode.status === 409 && mode.body.error === "real_unavailable");
+  const info2 = await (await fetch(`${base}/api/info`)).json();
+  if (info2.realAvailable) {
+    ok("Real is available: /api/real-setup names the doors and callers", (await (await fetch(`${base}/api/real-setup`)).json()).apps.length > 0);
+    ok("switching to Mock works", (await post("/api/mode", { source: "mock" })).status === 200);
+  } else {
+    const mode = await post("/api/mode", { source: "real" });
+    ok("switching to Real without settings is refused with 409 and a JSON reason", mode.status === 409 && mode.body.error === "real_unavailable");
+  }
 
   const catalog = await (await fetch(`${base}/api/catalog`)).json();
   ok("catalog carries the two shapes and the scenarios", Array.isArray(catalog.shapes) && catalog.shapes.length === 2 && catalog.scenarios.length >= 8);

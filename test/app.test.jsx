@@ -32,7 +32,7 @@ const catalog = () => ({
   isIsNot: IS_IS_NOT,
   scenarios: SCENARIOS.map((s) => ({ ...s, expectedVerdict: evaluate(s).verdict }))
 });
-const REAL_REASON = "Real is not available in this lab: the server never calls out. The fix on a real PingFederate is a token-mapping change.";
+const REAL_REASON = "Real needs the gateway settings (PAC_GW_URL, PAC_GW_APPS and a PAC_GW_KEY in the shared settings file). Mock keeps working.";
 const j = (body, status = 200) => Promise.resolve({ ok: status < 400, status, json: () => Promise.resolve(body) });
 
 // `fail`: (path) => undefined | "reject" | { status, html: true }
@@ -91,7 +91,7 @@ describe("the page", () => {
     expect(screen.getByTestId("mode-real").title).toBe(REAL_REASON);
     expect(screen.getByTestId("mode-select").value).toBe("mock");
     const reason = screen.getByTestId("real-reason");
-    expect(reason.textContent).toMatch(/Real is not available in this lab/);
+    expect(reason.textContent).toMatch(/Real needs the gateway settings/);
     expect(screen.getByTestId("mode-select").getAttribute("aria-describedby")).toBe("real-reason");
   });
 

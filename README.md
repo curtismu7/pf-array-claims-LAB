@@ -27,6 +27,21 @@ Every run shows **What the mock policy door did (simulated)** (the family's shar
 - Each browser tab gets its own `X-Workspace-Id` (default `default`), kept in `sessionStorage` (in memory if blocked), so one visitor's runs and Reset never touch another's.
 - customer.config (rule 12): the optional `customer.config.json` is read by `npm start` / `npm run dev` only; the Docker image does not contain it (`.dockerignore`, read-only filesystem).
 
+## Real mode: one live gateway call, your claims
+
+Real (the header toggle) needs the gateway settings: `PAC_GW_URL` (gateway origin), `PAC_GW_APPS`
+(door names) and `PAC_GW_KEY_<NAME>` (an agent access key) in `~/Development/.env` (or the file
+`STANDALONE_ENV` names, or the lab's own `.env`). See `.env.example`.
+
+**What a Real run does** (`POST /api/run-real`): you paste the **decoded claims** of a real token you
+hold — never the token itself (the server refuses a bearer credential outright). The lab computes the
+scenario's claim verdict over your claims and calls the live gateway's `tools/list` so the trace shows
+the real wire (keys scrubbed, the family's shared hop). The claim verdict itself is always this lab's
+computation, never a product guarantee.
+
 ## Honesty
 
-Everything on the page is **simulated** with example group names. The two JSON serialisations are what JSON guarantees (shown live); the over-grant is computed here. Nothing was re-run on a tenant; the fix on a real PingFederate is a token-mapping change, and which mapping UI emits which shape is UNVERIFIED here. Real mode is disabled with that reason.
+The mock runs are **simulated** with example group names; the two JSON serialisations are what JSON
+guarantees (shown live); the over-grant is computed here. Nothing about a real tenant was re-run: the
+fix on a real PingFederate is a token-mapping change, and which mapping UI emits which shape is
+UNVERIFIED here. Real adds the wire truth for the one call the lab makes; the verdict stays the lab's.

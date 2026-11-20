@@ -27,6 +27,9 @@ export const HELP_SECTIONS = [
   },
   {
     heading: "Mock and Real",
-    body: "The lab runs in Mock. Real is not available in this lab and is disabled in the page, with the reason shown beside the toggle: reproducing the shapes on a real PingFederate is a token-mapping change in the customer's own tenant."
+    body: [
+      "Mock (default): everything is in-process, nothing leaves the machine.",
+      "Real: switch the toggle when the gateway settings exist (PAC_GW_URL, PAC_GW_APPS and a PAC_GW_KEY_<NAME> in the shared settings file). A Real run does two things: it computes the scenario's claim verdict over the DECODED CLAIMS you paste (never a token — the lab refuses a bearer credential), and it calls the live gateway's tools/list so the trace shows the real wire. The claim verdict itself is always this lab's computation, never a product guarantee."
+    ]
   }
 ];

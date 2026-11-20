@@ -4,34 +4,55 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { mintToken, verify, claimMatches, STRING_SHAPE, ARRAY_SHAPE, TOOL_GROUPS, decodePayload } from "./claims.js";
-import { runScenario, startTrace } from "./door.js";
-import { installNetguard } from "./netguard.js";
+import { runScenario, runRealScenario, startTrace } from "./door.js";
+import { installNetguard, netguardOff, setAllowedOrigins, netguardSelfTest } from "./netguard.js";
+import { readFileSettings, doorConfig, createRealDoor } from "./gatewayReal.js";
 import { hostGuard, writeGuard, parseAllowedHosts } from "./guards.js";
 import { createHealth } from "./health.js";
 import { SCENARIOS, CASES, DOOR, POLICY, SHAPES, MOCK_NOTE } from "./scenarios.js";
 import { FIX, IS_IS_NOT } from "./content.js";
 import { loadCustomerConfig } from "./customer.js";
+import { readFileSync } from "node:fs";
 
 const APP_ID = "pf-array-claims-lab";
 const PORT_DEFAULT = 7828;
-const REAL_REASON =
-  "Real is not available in this lab: the server never calls out. The claim shapes are re-created with mock tokens and example group names; reproducing them on a real PingFederate is a token-mapping change in the customer's own tenant.";
+const PREFIX = "PAC";
+const NO_REAL =
+  "Real needs the gateway settings: PAC_GW_URL (gateway origin), PAC_GW_APPS (door names) and at least one PAC_GW_KEY_<NAME> (an agent access key) in ~/Development/.env (or STANDALONE_ENV, or the environment). Mock keeps working.";
+
+// Real hop: the family pattern (agent-registry-demo-LAB). The shared settings file wins, the environment overlays it.
+export function realDoorFrom(env = process.env) {
+  const file = env.STANDALONE_ENV || `${env.HOME || ""}/Development/.env`;
+  let text = "";
+  try { text = readFileSync(file, "utf8"); } catch { /* the environment may still carry the keys */ }
+  for (const [k, v] of Object.entries(env)) if (k.startsWith(`${PREFIX}_GW_`) && v) text += `\n${k}=${v}`;
+  const cfg = doorConfig(text, PREFIX);
+  return cfg.ok ? createRealDoor({ config: cfg, clientInfo: { name: APP_ID, version: "0.1.0" }, capture: true }) : null;
+}
+export function realProblem(env = process.env) {
+  const file = env.STANDALONE_ENV || `${env.HOME || ""}/Development/.env`;
+  let text = "";
+  try { text = readFileSync(file, "utf8"); } catch { /* nothing */ }
+  for (const [k, v] of Object.entries(env)) if (k.startsWith(`${PREFIX}_GW_`) && v) text += `\n${k}=${v}`;
+  return doorConfig(text, PREFIX).problem || null;
+}
 
 // Rule 13: the workspace id keeps each visitor's runs apart.
 const DEFAULT_WORKSPACE = "default";
 const WORKSPACE_ID = /^[A-Za-z0-9._-]{1,64}$/;
 const MAX_WORKSPACES = 100;
-const state = { source: "mock", workspaces: new Map() };
-
-const runsOf = (workspace) => state.workspaces.get(workspace) || [];
-function recordRun(workspace, run) {
-  const runs = runsOf(workspace);
-  state.workspaces.delete(workspace);
-  state.workspaces.set(workspace, runs);
-  runs.push(run);
-  if (runs.length > 200) runs.shift();
-  if (state.workspaces.size > MAX_WORKSPACES) state.workspaces.delete(state.workspaces.keys().next().value);
-}
+// `state` is per-buildServer (created in buildServer below); the helpers close over it via parameters.
+const makeRunStore = (state) => ({
+  runsOf: (workspace) => state.workspaces.get(workspace) || [],
+  recordRun(workspace, run) {
+    const runs = state.workspaces.get(workspace) || [];
+    state.workspaces.delete(workspace);
+    state.workspaces.set(workspace, runs);
+    runs.push(run);
+    if (runs.length > 200) runs.shift();
+    if (state.workspaces.size > MAX_WORKSPACES) state.workspaces.delete(state.workspaces.keys().next().value);
+  },
+});
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = join(__dirname, "..", "..", "dist");
@@ -59,8 +80,19 @@ function expectedVerdict(sc) {
   return evaluate(sc, startTrace()).verdict;
 }
 
-export function buildServer({ netguard, customer = loadCustomerConfig() } = {}) {
+export function buildServer({ netguard = true, customer = loadCustomerConfig(), door = null, now = () => new Date().toISOString() } = {}) {
   installNetguard();
+  const realDoor = door || realDoorFrom(process.env);
+  const canReal = Boolean(realDoor);
+  if (realDoor) {
+    // Real mode may reach exactly the door origin; every other outbound stays blocked and recorded.
+    setAllowedOrigins([realDoor.origin]);
+  }
+  const state = { source: canReal ? "real" : "mock", workspaces: new Map(), door: realDoor };
+  const store = makeRunStore(state);
+  const runsOf = store.runsOf;
+  const recordRun = store.recordRun;
+  lastServer = { state, store };
   const app = express();
   app.disable("x-powered-by");
   app.use("/api", (req, res, next) => {
@@ -91,7 +123,7 @@ export function buildServer({ netguard, customer = loadCustomerConfig() } = {}) 
   app.use("/api/health", health.router);
 
   app.get("/api/info", (_req, res) => {
-    res.json({ source: state.source, realAvailable: false, realReason: REAL_REASON });
+    res.json({ source: state.source, realAvailable: canReal, realReason: canReal ? null : (realProblem(process.env) || NO_REAL), realApps: canReal ? state.door.apps : undefined, realCallers: canReal ? state.door.callers : undefined });
   });
 
   app.post("/api/mode", (req, res) => {
@@ -99,10 +131,38 @@ export function buildServer({ netguard, customer = loadCustomerConfig() } = {}) 
     const keys = body && typeof body === "object" && !Array.isArray(body) ? Object.keys(body) : [];
     if (keys.length !== 1 || keys[0] !== "source") return res.status(400).json({ error: "bad_request", message: "body must be exactly {source:\"mock\"|\"real\"}" });
     const { source } = body;
-    if (source === "real") return res.status(409).json({ error: "real_unavailable", message: REAL_REASON });
-    if (source !== "mock") return res.status(400).json({ error: "bad_request", message: "body must be exactly {source:\"mock\"|\"real\"}" });
-    state.source = "mock";
+    if (source === "real" && !canReal) return res.status(409).json({ error: "real_unavailable", message: realProblem(process.env) || NO_REAL });
+    if (source !== "mock" && source !== "real") return res.status(400).json({ error: "bad_request", message: "body must be exactly {source:\"mock\"|\"real\"}" });
+    state.source = source;
     res.json({ source: state.source });
+  });
+
+  // One real run: the caller supplies the decoded claims of a REAL token they hold (never the token itself — the
+  // lab never holds or forwards a bearer credential). The lab computes the claim verdict for the scenario's shape
+  // and match mode, and calls the live gateway's tools/list so the trace carries the wire truth.
+  app.post("/api/run-real", async (req, res) => {
+    if (state.source !== "real" || !state.door) return res.status(409).json({ error: "real_unavailable", message: realProblem(process.env) || NO_REAL });
+    const { scenario, claims, app: askedApp, caller } = req.body || {};
+    const found = SCENARIOS.find((s) => s.id === scenario);
+    if (!found) return res.status(400).json({ error: "unknown_scenario", message: `unknown scenario; one of ${SCENARIOS.map((s) => s.id).join(", ")}` });
+    if (!claims || typeof claims !== "object" || Array.isArray(claims)) return res.status(400).json({ error: "bad_claims", message: "claims must be the decoded payload object of a real token you hold (the lab never takes the token itself)" });
+    if (JSON.stringify(claims).length > 16 * 1024) return res.status(413).json({ error: "claims_too_large", message: "the decoded claims are over 16 KB" });
+    if (req.body.token !== undefined) return res.status(400).json({ error: "token_not_accepted", message: "never send a bearer token to this lab: paste the DECODED claims only" });
+    const app = askedApp && state.door.apps.includes(askedApp) ? askedApp : state.door.apps[0];
+    const callerId = caller && state.door.callers.some((c) => c.id === caller) ? caller : state.door.callers[0].id;
+    try {
+      const run = await runRealScenario({ scenario: found, door: state.door, app, caller: callerId, claimsPayload: claims, trace: req.trace, now });
+      recordRun(req.workspace, run);
+      res.json(run);
+    } catch (err) {
+      res.status(502).json({ error: "gateway_error", message: String(err?.message || "the gateway call failed").slice(0, 400) });
+    }
+  });
+
+  // Which settings the real hop has (never a key): the door names and the caller labels.
+  app.get("/api/real-setup", (_req, res) => {
+    if (!canReal) return res.status(409).json({ error: "real_unavailable", message: realProblem(process.env) || NO_REAL });
+    res.json({ apps: state.door.apps, callers: state.door.callers, gateway: state.door.origin, version: state.door.version ?? null });
   });
 
   app.get("/api/shelf", (_req, res) => {
@@ -171,7 +231,7 @@ export function buildServer({ netguard, customer = loadCustomerConfig() } = {}) 
     res.json({ ok: true });
   });
 
-  if (netguard) netguard(app);
+  if (netguard === false) netguardOff(); // tests: lift the guard deliberately (never in production)
 
   if (existsSync(distDir)) {
     app.use(express.static(distDir));
@@ -189,8 +249,11 @@ export function buildServer({ netguard, customer = loadCustomerConfig() } = {}) 
   return app;
 }
 
+// The last built server's state (tests introspect it; there is one server per process in practice).
+let lastServer = null;
 export function readState(workspace = DEFAULT_WORKSPACE) {
-  return { source: state.source, runs: runsOf(workspace) };
+  if (lastServer) return { source: lastServer.state.source, runs: lastServer.store.runsOf(workspace) };
+  return { source: "mock", runs: [] };
 }
 
 const invoked = process.argv[1] && new URL("file://" + process.argv[1]).pathname;

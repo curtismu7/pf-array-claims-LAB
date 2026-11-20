@@ -8,6 +8,7 @@ import { TALK_TRACK } from "./talkTrack.js";
 import "./top-menu/top-menu.css";
 import SimulationBanner from "./Banner.jsx";
 import MintPanel from "./MintPanel.jsx";
+import RealRun from "./RealRun.jsx";
 import FlowSim from "./FlowSim.jsx";
 import ScenarioPicker from "./ScenarioPicker.jsx";
 import { SetupGuide, IsIsNot } from "./Guide.jsx";
@@ -122,7 +123,7 @@ export default function App() {
               </label>
               {realOff && (
                 <span id="real-reason" className="real-reason" data-testid="real-reason">
-                  Real is not available in this lab: the claim shapes are re-created with mock tokens; the fix on a real PingFederate is a token-mapping change.
+                  Real needs the gateway settings (PAC_GW_URL, PAC_GW_APPS and a PAC_GW_KEY in the shared settings file). Mock keeps working.
                 </span>
               )}
             </>}
@@ -156,7 +157,9 @@ export default function App() {
           </aside>
         )}
         <MintPanel shapes={(data && data.shapes) || []} groups={(data && data.groups) || []} />
-        <ScenarioPicker cases={(data && data.cases) || []} scenarios={(data && data.scenarios) || []} active={activeScenario} onSelect={setActiveScenario} />        <FlowSim activeScenario={activeScenario} speed={speed} resetKey={resetKey} />
+        <ScenarioPicker cases={(data && data.cases) || []} scenarios={(data && data.scenarios) || []} active={activeScenario} onSelect={setActiveScenario} />
+        <RealRun source={source} info={info.data} scenarios={(data && data.scenarios) || []} activeScenario={activeScenario} onSelect={setActiveScenario} />
+        <FlowSim activeScenario={activeScenario} speed={speed} resetKey={resetKey} />
         <SetupGuide guide={data && data.fix} />
         <IsIsNot panel={data && data.isIsNot} />
       </main>
