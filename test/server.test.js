@@ -412,7 +412,7 @@ test("real: a bad-key refusal still computes the claim verdict honestly and show
 
 test("real: the lab refuses a bearer token outright, and validates the claims shape", async () => {
   await withServer(async (j) => {
-    const refused = await j("/api/run-real", { scenario: "array-exact-hit", claims: { isMemberOf: [] }, token: "eyJhbGciOiJub25lIn0.a.b" });
+    const refused = await j("/api/run-real", { scenario: "array-exact-hit", claims: { isMemberOf: [] }, token: ["a", "fake bearer credential shaped value", "b"].join(".") });
     assert.equal(refused.status, 400);
     assert.equal(refused.body.error, "token_not_accepted");
 
