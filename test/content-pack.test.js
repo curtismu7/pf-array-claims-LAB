@@ -28,12 +28,12 @@ test("content pack: schema, ids unique, cards point at real terms and stories, h
   for (const s of pack.stories) assert.match(s.id, /^S\d\d$/);
 });
 
-test("content pack and shelf entry agree on the lab's identity (port 7828, provisional catalog id D140)", () => {
+test("content pack and shelf entry agree on the lab's identity (port 7828, catalog id D140)", () => {
   assert.equal(shelf.id, "pf-array-claims-lab");
   assert.equal(shelf.name, "PF Array Claims");
   assert.equal(shelf.kind, "Tester");
   assert.ok(!("tier" in shelf), "the shelf's field is kind; tier is dropped by its registry");
-  assert.equal(shelf.catalogId, "D140 provisional");
+  assert.equal(shelf.catalogId, "D140");
   assert.equal(pack.demo.catalog, shelf.catalogId);
   assert.equal(shelf.port, 7828);
   assert.equal(shelf.url, "http://localhost:7828");

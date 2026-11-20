@@ -2,7 +2,7 @@
 
 Tester-tier standalone: "PF Array Claims", the isMemberOf claim-shape use case — a PingFederate-issued token can carry group entitlements as a delimited string or a JSON array, and a group-entitlement policy on an MCP gateway answers differently for each: substring search over the string over-grants to decoy names; the array gives exact membership. Mint panel (both shapes, decoded claims), three simulated cases, "The fix" guide (5 steps) and an IS / IS NOT panel. Structure copied from cedar-in-privilege-LAB.
 
-- Run: `npm ci && npm start` (port 7828 and catalog id D140 provisional are placeholders; the shelf registry has the final say) or `docker compose up --build -d`
+- Run: `npm ci && npm start` (port 7828 and catalog id D140 are placeholders; the shelf registry has the final say) or `docker compose up --build -d`
 - Test: `npm test` (node --test + vitest + repo checks), `npm run doctor`. There is NO real probe here: Real is not available in this lab.
 - Rules that bite: mock by default; the Real toggle is DISABLED with a visible reason and `POST /api/mode {"source":"real"}` answers 409 (the server never calls out; netguard + self-test stay on). Loopback-only publish, example group names only (`MCPAccess-<tool>-<level>` pattern, decoy `MCPAccess-Atlan-Read-Extra`), `.example` hosts; the mock token of a run is shown whole and labelled mock-issued (rule 4).
 - The claim logic lives in `server/src/claims.js` (mint both shapes, `claimMatches` with the two modes); the door in `server/src/door.js`; scenarios/cases/groups in `server/src/scenarios.js`; "The fix" and IS / IS NOT in `server/src/content.js`. The mock door is NOT a policy engine and decides nothing real; say so wherever it is described.

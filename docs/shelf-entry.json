@@ -2,7 +2,7 @@
   "id": "pf-array-claims-lab",
   "name": "PF Array Claims",
   "kind": "Tester",
-  "catalogId": "D140 provisional",
+  "catalogId": "D140",
   "description": "The isMemberOf claim-shape use case: a PF token carries groups as a delimited string or a JSON array, and a group policy answers differently — substring search over-grants to decoys; the array gives exact membership. Simulated, example names; the real fix is a token-mapping change, not re-run here.",
   "port": 7828,
   "healthPath": "/api/health",

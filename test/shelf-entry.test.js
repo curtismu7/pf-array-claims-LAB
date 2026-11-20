@@ -65,9 +65,9 @@ test("the shelf description says what is simulated and that nothing was re-run o
   assert.match(entry.description, /not re-run here/i);
 });
 
-test("the shelf entry names Tester, the provisional catalog id D140 and port 7828, with tags only from the family list", () => {
+test("the shelf entry names Tester, the catalog id D140 and port 7828, with tags only from the family list", () => {
   assert.equal(entry.kind, "Tester");
-  assert.equal(entry.catalogId, "D140 provisional");
+  assert.equal(entry.catalogId, "D140");
   assert.equal(entry.port, 7828);
   assert.equal(entry.url, "http://localhost:7828");
   for (const t of entry.tags) assert.ok(["pingfederate", "oauth-tokens", "authorization-policy", "agent-identity", "simulated"].includes(t), t);

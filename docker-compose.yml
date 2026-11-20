@@ -4,7 +4,6 @@ services:
   pf-array-claims-lab:
     build: .
     image: pf-array-claims-lab:latest
-    container_name: pf-array-claims-lab
     ports:
       - "127.0.0.1:${HOST_PORT:-7828}:7828"
     environment:

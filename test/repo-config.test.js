@@ -117,7 +117,10 @@ test("HI-6 + SWAP compose: the allowed hosts follow HOST_PORT and carry the lab-
   for (const need of ["pf-array-claims-lab.local.ping-devops.com:7828", "pf-array-claims-lab:7828", "pf-array-claims-lab.local.ping-devops.com:8443", "local.ping-devops.com:8443"]) {
     assert.ok(entries.includes(need), need);
   }
-  assert.match(compose, /container_name: pf-array-claims-lab\b/, "the container name is the proxy's upstream name");
+  // The lab-proxy resolves the compose-DNS name <project>-<service>-1; a container_name pin would break that
+  // convention, so the compose file must NOT set one (the service name is pf-array-claims-lab).
+  assert.equal(/container_name:/.test(compose), false, "no container_name pin: the lab-proxy resolves <project>-<service>-1");
+  assert.match(compose, /^\s{2}pf-array-claims-lab:/m, "the service name is what the proxy's upstream name builds from");
 });
 
 test("HI-7 .gitignore and .dockerignore keep every .env.* out, and only .env.example in", () => {

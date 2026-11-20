@@ -6,7 +6,7 @@
  "demo": {
   "id": "pf-array-claims-lab",
   "name": "PF Array Claims",
-  "catalog": "D140 provisional",
+  "catalog": "D140",
   "baseUrl": "http://127.0.0.1:7828",
   "doctor": "/api/health",
   "tags": [
