@@ -8,6 +8,15 @@ The use case, from a real POC thread: a policy asking "does this token carry MCP
 
 ## What the page walks
 
+### Postman
+
+`postman/pf-array-claims-lab.postman_collection.json` walks the same path without the UI: the catalog with expected verdicts, minting both shapes (the claims carry `isMemberOf`), the ten door scenarios, the unknown-scenario and bad-shape negatives, run history and reset. No environment needed — tokens are HS256 fixtures from the in-process stand-in.
+
+```
+node ../../shared/postman/generator.mjs --spec postman/spec.json            # regenerate (never hand-edit the output)
+npx newman run postman/pf-array-claims-lab.postman_collection.json
+```
+
 0. **Mint panel.** Pick the shape and the groups, mint: the decoded claims show `isMemberOf` as a delimited string or as a JSON array. This is the knob the fix turns — the token mapping at PingFederate.
 1. **Case 1 — the shape decides.** The same policy, the same user, both shapes and both match modes: substring grants on a text hit, exact membership grants only on a real array element, a membership policy refuses a string token outright, and a substring policy "grants" on an array only by stringifying it (an accident, not a feature).
 2. **Case 2 — the over-grant.** A token that never held `MCPAccess-Atlan-Read` (only the decoy `MCPAccess-Atlan-Read-Extra`): the substring policy grants it, the array policy refuses. The decoy pair is the proof that matching is exact.

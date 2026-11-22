@@ -1,0 +1,161 @@
+{
+  "name": "PF Array Claims LAB",
+  "slug": "pf-array-claims-lab",
+  "description": "API collection for PF Array Claims LAB: the PingFederate array-vs-string group-claims story at the mock MCP door. Mint tokens in both shapes (string and array groups), run the ten match scenarios (contains vs exact, decoy groups, multi-group), and read the run history. Tokens are HS256 fixtures from an in-process PingFederate stand-in, signed by a throwaway key.",
+  "baseUrl": "http://localhost:7828",
+  "env": {},
+  "folders": [
+    {
+      "name": "Sanity",
+      "description": "Health, mode info, the scenario catalog with expected verdicts, and the real-mode setup guide.",
+      "requests": [
+        {
+          "name": "Health",
+          "method": "GET",
+          "path": "/api/health",
+          "tests": [
+            "pm.response.to.have.status(200);",
+            "pm.expect(pm.response.json().state).to.eql('ready');"
+          ]
+        },
+        {
+          "name": "Info",
+          "method": "GET",
+          "path": "/api/info",
+          "tests": [
+            "pm.response.to.have.status(200);"
+          ]
+        },
+        {
+          "name": "Catalog (scenarios with expected verdicts)",
+          "method": "GET",
+          "path": "/api/catalog",
+          "tests": [
+            "pm.response.to.have.status(200);",
+            "pm.expect(pm.response.json().scenarios.length).to.be.above(0);"
+          ]
+        },
+        {
+          "name": "Real-mode setup guide",
+          "method": "GET",
+          "path": "/api/real-setup",
+          "tests": [
+            "pm.expect(pm.response.code).to.be.oneOf([200, 409]);"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Mint tokens (both shapes)",
+      "description": "Mint a token with string-shaped or array-shaped groups. The mock note says it: HS256 fixture key, signs nothing real.",
+      "requests": [
+        {
+          "name": "Mint an array-shaped token",
+          "method": "POST",
+          "path": "/api/mint",
+          "body": {
+            "shape": "array",
+            "groups": [
+              "mcp:read",
+              "mcp:write"
+            ]
+          },
+          "tests": [
+            "pm.response.to.have.status(200);",
+            "pm.expect(pm.response.json().mock).to.eql(true);",
+            "pm.expect(pm.response.json().claims).to.have.property('isMemberOf');"
+          ]
+        },
+        {
+          "name": "Mint a string-shaped token",
+          "method": "POST",
+          "path": "/api/mint",
+          "body": {
+            "shape": "string",
+            "groups": [
+              "mcp:read"
+            ]
+          },
+          "tests": [
+            "pm.response.to.have.status(200);",
+            "pm.expect(pm.response.json().mock).to.eql(true);"
+          ]
+        },
+        {
+          "name": "Mint with a bad shape (negative)",
+          "method": "POST",
+          "path": "/api/mint",
+          "body": {
+            "shape": "blob",
+            "groups": []
+          },
+          "tests": [
+            "pm.expect(pm.response.code).to.eql(400);",
+            "pm.expect(pm.response.json().error).to.eql('bad_shape');"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Run scenarios at the door",
+      "description": "One scenario per request; ids from the catalog. Each run records the verdict against the mock door.",
+      "requests": [
+        {
+          "name": "Run: array-exact-hit",
+          "method": "POST",
+          "path": "/api/run",
+          "body": {
+            "scenario": "array-exact-hit"
+          },
+          "tests": [
+            "pm.response.to.have.status(200);",
+            "pm.expect(pm.response.json()).to.have.property('verdict');"
+          ]
+        },
+        {
+          "name": "Run: string-contains-miss",
+          "method": "POST",
+          "path": "/api/run",
+          "body": {
+            "scenario": "string-contains-miss"
+          },
+          "tests": [
+            "pm.response.to.have.status(200);",
+            "pm.expect(pm.response.json()).to.have.property('verdict');"
+          ]
+        },
+        {
+          "name": "Run: unknown scenario (negative)",
+          "method": "POST",
+          "path": "/api/run",
+          "body": {
+            "scenario": "nope"
+          },
+          "tests": [
+            "pm.expect(pm.response.code).to.eql(400);",
+            "pm.expect(pm.response.json().error).to.eql('unknown_scenario');"
+          ]
+        },
+        {
+          "name": "Run history",
+          "method": "GET",
+          "path": "/api/runs",
+          "tests": [
+            "pm.response.to.have.status(200);",
+            "pm.expect(pm.response.json().runs).to.be.an('array');"
+          ]
+        },
+        {
+          "name": "Reset",
+          "method": "POST",
+          "path": "/api/reset",
+          "body": {},
+          "tests": [
+            "pm.response.to.have.status(200);",
+            "pm.expect(pm.response.json().ok).to.eql(true);"
+          ]
+        }
+      ]
+    }
+  ]
+}

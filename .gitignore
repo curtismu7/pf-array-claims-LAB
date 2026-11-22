@@ -5,3 +5,6 @@ dist/
 !.env.example
 .data
 customer.config.json
+
+# Filled live environments hold real settings: never commit them.
+postman/*.live.environment.json
