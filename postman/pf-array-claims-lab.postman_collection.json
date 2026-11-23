@@ -3,7 +3,7 @@
     "name": "PF Array Claims LAB",
     "description": "API collection for PF Array Claims LAB: the PingFederate array-vs-string group-claims story at the mock MCP door. Mint tokens in both shapes (string and array groups), run the ten match scenarios (contains vs exact, decoy groups, multi-group), and read the run history. Tokens are HS256 fixtures from an in-process PingFederate stand-in, signed by a throwaway key.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_postman_id": "71372a21-36ed-4d2f-8bb9-3f493a3d7753"
+    "_postman_id": "postman-pf-array-claims-lab"
   },
   "item": [
     {
