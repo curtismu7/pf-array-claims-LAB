@@ -10,9 +10,7 @@
   color: var(--on-box);
 }
 
-.shell-brand {
-  font-weight: 700;
-}
+.shell-brand  { font-weight: 700; }
 
 .accent-rule {
   height: 3px;
