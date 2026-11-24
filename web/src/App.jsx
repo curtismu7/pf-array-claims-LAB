@@ -105,6 +105,7 @@ export default function App() {
         </nav>
         <div className="shell-right" ref={modeBox}>
           <TopMenu
+          postman={{ repo: "curtismu7/pf-array-claims-LAB", slug: "pf-array-claims-lab" }}
             mode={{ value: source === "real" ? "real" : "mock", onChange: (m) => switchMode(m === "real" ? "real" : "mock"), realAvailable: info.data ? info.data.realAvailable !== false : null, realHint: info.data?.realReason || undefined }}
             theme={{ value: theme, onChange: setTheme }}
             present={{ active: presenter, onToggle: () => setPresenter((v) => !v), label: "Presenter (Alt+P)" }}
