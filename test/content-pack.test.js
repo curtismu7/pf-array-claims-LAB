@@ -56,7 +56,7 @@ test("the README says Tier: Tester, and the source lab's identity is not carried
   const readme = readFileSync(join(root, "README.md"), "utf8");
   assert.match(readme, /^Tier: Tester$/m);
   const files = ["README.md", "CLAUDE.md", "package.json", "docker-compose.yml", "Dockerfile", "content-pack.json", "docs/shelf-entry.json", "docs/talk-track.md",
-    "web/src/studio-data/pf-array-claims-flow.json", "web/app.css", "web/index.html", "web/src/App.jsx", "web/src/FlowSim.jsx", "web/src/Banner.jsx", "web/src/RunResult.jsx",
+    "web/src/studio-data/pf-array-claims-flow.json", "web/app.css", "web/index.html", "web/src/App.jsx", "web/src/FlowSim.jsx", "web/src/RunResult.jsx",
     "web/src/ScenarioPicker.jsx", "web/src/Guide.jsx", "server/src/index.js", "server/src/claims.js", "server/src/door.js", "server/src/scenarios.js", "server/src/content.js",
     "scripts/doctor.mjs", "scripts/reset.mjs", ".github/workflows/ci.yml"];
   // The source lab's own id, name, catalog id and port must not survive as this lab's identity.

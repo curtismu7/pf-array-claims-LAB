@@ -65,15 +65,68 @@ const pick = async (name) => fireEvent.click(await screen.findByRole("button", {
 const ran = () => waitFor(() => expect(screen.getByTestId("run-result")).toBeTruthy(), { timeout: 8000 });
 
 describe("the page", () => {
-  it("renders the simulation banner first, saying what is simulated and that the door is not a policy engine", async () => {
+  it("opens on the MOCK modal, saying what is simulated and that the door is not a policy engine", async () => {
     mockFetch();
     render(<App />);
-    const banner = await screen.findByTestId("sim-banner");
-    expect(banner.textContent).toMatch(/simulated/i);
-    expect(banner.textContent).toMatch(/not Privilege/i);
-    expect(banner.textContent).toMatch(/not a Cedar engine/i);
-    expect(banner.textContent).toMatch(/TWO claim-reading modes/i);
-    expect(banner.compareDocumentPosition(screen.getByTestId("intro")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const modal = await screen.findByTestId("mode-modal");
+    expect(modal).toHaveAttribute("data-mode", "mock");
+    expect(modal.textContent).toMatch(/MOCK/);
+    expect(modal.textContent).toMatch(/simulated/i);
+    expect(modal.textContent).toMatch(/not Privilege/i);
+    expect(modal.textContent).toMatch(/not a Cedar engine/i);
+    expect(modal.textContent).toMatch(/TWO claim-reading modes/i);
+    expect(modal.textContent).toMatch(/decides nothing real/i);
+  });
+
+  it("the old simulation banner is gone", async () => {
+    mockFetch();
+    render(<App />);
+    await screen.findByTestId("intro");
+    expect(screen.queryByTestId("sim-banner")).toBeNull();
+    expect(document.querySelector("main > .banner")).toBeNull();
+  });
+
+  it("Got it closes the modal, and a re-render in the same session does not show it again", async () => {
+    mockFetch();
+    const { unmount } = render(<App />);
+    fireEvent.click(await screen.findByTestId("mode-modal-ok"));
+    expect(screen.queryByTestId("mode-modal")).toBeNull();
+    unmount();
+    render(<App />);
+    await screen.findByTestId("intro");
+    expect(screen.queryByTestId("mode-modal")).toBeNull();
+  });
+
+  it("a lab already in Real shows MOCK until /api/info answers, then REAL with the Real line (live tools/list only)", async () => {
+    let release;
+    const gate = new Promise((r) => { release = r; });
+    mockFetch();
+    const base = global.fetch;
+    global.fetch = async (path, opts) => {
+      if (path === "/api/info") { await gate; return j({ source: "real", realAvailable: true }); }
+      return base(path, opts);
+    };
+    render(<App />);
+    expect((await screen.findByTestId("mode-modal")).getAttribute("data-mode")).toBe("mock");
+    release();
+    await waitFor(() => expect(screen.getByTestId("mode-modal").getAttribute("data-mode")).toBe("real"));
+    const modal = screen.getByTestId("mode-modal");
+    expect(modal.textContent).toMatch(/REAL/);
+    expect(modal.textContent).toMatch(/one live element is the gateway's tools\/list/);
+    expect(modal.textContent).toMatch(/not Privilege and not a Cedar engine, and it decides nothing real/);
+  });
+
+  it("switching Mock to Real after dismissing MOCK shows the REAL modal", async () => {
+    mockFetch();
+    const base = global.fetch;
+    let switched = false;
+    global.fetch = (path, opts) => (path === "/api/mode" ? (switched = true, j({ source: "real" })) : path === "/api/info" ? j({ source: switched ? "real" : "mock", realAvailable: true }) : base(path, opts));
+    render(<App />);
+    fireEvent.click(await screen.findByTestId("mode-modal-ok"));
+    const select = await screen.findByTestId("mode-select");
+    await waitFor(() => expect(screen.getByTestId("mode-real").disabled).toBe(false));
+    fireEvent.change(select, { target: { value: "real" } });
+    await waitFor(() => expect(screen.getByTestId("mode-modal").getAttribute("data-mode")).toBe("real"));
   });
 
   it("renders the shared TopMenu in the header, with mode, theme, presenter and Reset", async () => {
