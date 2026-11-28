@@ -6,7 +6,7 @@ import TalkTrackDialog from "./talk-track/TalkTrackDialog.jsx";
 import { HELP_SECTIONS } from "./helpContent.js";
 import { TALK_TRACK } from "./talkTrack.js";
 import "./top-menu/top-menu.css";
-import SimulationBanner from "./Banner.jsx";
+import ModeModal from "./mode-modal/ModeModal.jsx";
 import MintPanel from "./MintPanel.jsx";
 import RealRun from "./RealRun.jsx";
 import FlowSim from "./FlowSim.jsx";
@@ -16,6 +16,12 @@ import { useApi, postJson, workspaceHeaders } from "./api.js";
 
 // The version the header shows: package.json's, fixed at build time (vite.config.js).
 const LAB_VERSION = typeof __LAB_VERSION__ === "string" ? __LAB_VERSION__ : null;
+
+// The Real-or-mock modal (shared mode-modal) replaces the old simulation banner. The Mock line keeps the pinned honesty sentences.
+const MODE_LINES = {
+  mock: "The mock runs on this page are simulated: a mock PingFederate token mint and a mock policy door, in-process. The door is an evaluator of TWO claim-reading modes (exact array membership, substring search) over example group names; it is not Privilege, not a Cedar engine, and it decides nothing real.",
+  real: "The one live element is the gateway's tools/list (the wire trace). The claim verdict is still this lab's computation over the claims you paste, not Privilege and not a Cedar engine, and it decides nothing real. Nothing else leaves this machine.",
+};
 
 // Presenter mode (rule 3): shows the line to say for the active scenario while presenting.
 function presenterSay(active) {
@@ -135,7 +141,6 @@ export default function App() {
       </header>
       <div className="accent-rule" aria-hidden="true" />
       <main>
-        <SimulationBanner source={source} />
         {(catalog.error || info.error) && (
           <div className="error-pane" role="alert" data-testid="load-error">
             <span>The page could not load its data: {catalog.error || info.error}.</span>
@@ -164,6 +169,7 @@ export default function App() {
         <SetupGuide guide={data && data.fix} />
         <IsIsNot panel={data && data.isIsNot} />
       </main>
+      <ModeModal mode={source === "real" ? "real" : "mock"} lines={MODE_LINES} storageKey="pfac-mode" />
       <HelpDialog isOpen={helpOpen} onClose={() => setHelpOpen(false)} sections={HELP_SECTIONS} />
       <TalkTrackDialog isOpen={talkOpen} onClose={() => setTalkOpen(false)} talk={TALK_TRACK} />
       <footer className="app-footer">

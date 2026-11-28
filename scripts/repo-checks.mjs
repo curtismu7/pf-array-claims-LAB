@@ -110,6 +110,7 @@ const VENDORED = [
   { dir: "web/src/floating-dialog", pin: "floating-dialog.sha256" },
   { dir: "web/src/help-dialog", pin: "help-dialog.sha256" },
   { dir: "web/src/talk-track", pin: "talk-track.sha256" },
+  { dir: "web/src/mode-modal", pin: "mode-modal.sha256" },
   { dir: "web/src/components", pin: "ShelfLink.sha256", only: ["ShelfLink.jsx"] }
 ];
 for (const { dir, pin, only } of VENDORED) {
